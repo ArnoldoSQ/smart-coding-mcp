@@ -88,18 +88,6 @@ Add the server configuration to the `mcpServers` object in your config file:
 }
 ```
 
-### Option 3: Auto-Detect Current Directory
-
-```json
-{
-  "mcpServers": {
-    "smart-coding-mcp": {
-      "command": "smart-coding-mcp"
-    }
-  }
-}
-```
-
 ## Environment Variables
 
 Override configuration settings via environment variables in your MCP config:
