@@ -169,6 +169,8 @@ The server indexes your code in four steps:
 
 When you search, your query is converted to the same vector format and compared against all code chunks using cosine similarity. The most relevant matches are returned.
 
+![How It Works](how-its-works.png)
+
 ## Examples
 
 **Natural language search:**
