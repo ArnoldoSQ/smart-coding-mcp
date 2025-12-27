@@ -30,36 +30,59 @@ This MCP server solves that by indexing your codebase with AI embeddings. Your A
 
 ## Installation
 
-### Prerequisites
-
-- Node.js 18 or higher
-- npm or yarn
-
-### Setup
-
-1. Install dependencies:
+Install globally via npm:
 
 ```bash
-npm install
+npm install -g smart-coding-mcp
 ```
 
-2. Add to your MCP configuration file:
+## Configuration
+
+Add to your MCP configuration file (e.g., `~/.config/claude/mcp.json` or similar):
+
+### Option 1: Specific Project (Recommended)
 
 ```json
 {
   "mcpServers": {
     "smart-coding-mcp": {
-      "command": "node",
-      "args": ["/path/to/smart-coding-mcp/index.js"],
-      "cwd": "/path/to/smart-coding-mcp"
+      "command": "smart-coding-mcp",
+      "args": ["--workspace", "/absolute/path/to/your/project"]
     }
   }
 }
 ```
 
-3. Restart your AI assistant
+### Option 2: Multi-Project Support
 
-The server will automatically index your codebase on first run.
+```json
+{
+  "mcpServers": {
+    "smart-coding-mcp-project-a": {
+      "command": "smart-coding-mcp",
+      "args": ["--workspace", "/path/to/project-a"]
+    },
+    "smart-coding-mcp-project-b": {
+      "command": "smart-coding-mcp",
+      "args": ["--workspace", "/path/to/project-b"]
+    }
+  }
+}
+```
+
+### Option 3: Auto-Detect Current Directory
+
+```json
+{
+  "mcpServers": {
+    "smart-coding-mcp": {
+      "command": "smart-coding-mcp"
+    }
+  }
+}
+```
+
+**Note**: The server starts instantly and indexes in the background, so your IDE won't be blocked waiting for indexing to complete.
 
 ## Available Tools
 
@@ -119,7 +142,7 @@ This typically reduces indexed file count by 100x. A project with 50,000 files (
 
 ## Configuration
 
-The server works out of the box with sensible defaults. Create a `config.json` file to customize:
+The server works out of the box with sensible defaults. Create a `config.json` file in your workspace to customize:
 
 ```json
 {
@@ -132,6 +155,8 @@ The server works out of the box with sensible defaults. Create a `config.json` f
   "cacheDirectory": "./.smart-coding-cache",
   "watchFiles": true,
   "chunkSize": 15,
+  "batchSize": 100,
+  "maxFileSize": 1048576,
   "maxResults": 5
 }
 ```
@@ -143,6 +168,8 @@ The server works out of the box with sensible defaults. Create a `config.json` f
 - `watchFiles`: Automatically reindex when files change (default: true)
 - `enableCache`: Cache embeddings to disk (default: true)
 - `chunkSize`: Lines of code per chunk - smaller = more precise, larger = more context (default: 15)
+- `batchSize`: Number of files to process in parallel (default: 100)
+- `maxFileSize`: Skip files larger than this size in bytes (default: 1MB)
 
 ## Examples
 
