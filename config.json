@@ -5,6 +5,8 @@
   "smartIndexing": true,
   "chunkSize": 15,
   "chunkOverlap": 3,
+  "batchSize": 100,
+  "maxFileSize": 1048576,
   "maxResults": 5,
   "enableCache": true,
   "cacheDirectory": "./.smart-coding-cache",

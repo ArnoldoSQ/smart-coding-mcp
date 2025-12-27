@@ -19,6 +19,21 @@ export class CodebaseIndexer {
     }
     
     try {
+      // Check file size first
+      const stats = await fs.stat(file);
+      
+      // Skip directories
+      if (stats.isDirectory()) {
+        return 0;
+      }
+      
+      if (stats.size > this.config.maxFileSize) {
+        if (this.config.verbose) {
+          console.error(`[Indexer] Skipped ${fileName} (too large: ${(stats.size / 1024 / 1024).toFixed(2)}MB)`);
+        }
+        return 0;
+      }
+      
       const content = await fs.readFile(file, "utf-8");
       const hash = hashContent(content);
       
@@ -84,7 +99,7 @@ export class CodebaseIndexer {
     let skippedFiles = 0;
     
     // Process files in parallel batches for speed
-    const BATCH_SIZE = 5; // Process 5 files at once
+    const BATCH_SIZE = this.config.batchSize || 100;
     
     for (let i = 0; i < files.length; i += BATCH_SIZE) {
       const batch = files.slice(i, i + BATCH_SIZE);
@@ -101,7 +116,10 @@ export class CodebaseIndexer {
         if (chunksAdded === 0) skippedFiles++;
       }
       
-      console.error(`[Indexer] Progress: ${processedFiles}/${files.length} files processed...`);
+      // Progress indicator every 500 files (less console overhead)
+      if (processedFiles % 500 === 0 || processedFiles === files.length) {
+        console.error(`[Indexer] Progress: ${processedFiles}/${files.length} files processed...`);
+      }
     }
 
     console.error(`[Indexer] Indexed ${totalChunks} code chunks from ${files.length} files (${skippedFiles} unchanged)`);

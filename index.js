@@ -14,6 +14,34 @@ import * as IndexCodebaseFeature from "./features/index-codebase.js";
 import * as HybridSearchFeature from "./features/hybrid-search.js";
 import * as ClearCacheFeature from "./features/clear-cache.js";
 
+// Parse workspace from command line arguments
+const args = process.argv.slice(2);
+const workspaceIndex = args.findIndex(arg => arg.startsWith('--workspace'));
+let workspaceDir = null;
+
+if (workspaceIndex !== -1) {
+  const arg = args[workspaceIndex];
+  let rawWorkspace = null;
+  
+  if (arg.includes('=')) {
+    rawWorkspace = arg.split('=')[1];
+  } else if (workspaceIndex + 1 < args.length) {
+    rawWorkspace = args[workspaceIndex + 1];
+  }
+  
+  // Check if IDE variable wasn't expanded (contains ${})
+  if (rawWorkspace && rawWorkspace.includes('${')) {
+    console.error(`[Server] IDE variable not expanded: ${rawWorkspace}, using current directory`);
+    workspaceDir = process.cwd();
+  } else if (rawWorkspace) {
+    workspaceDir = rawWorkspace;
+  }
+  
+  if (workspaceDir) {
+    console.error(`[Server] Workspace mode: ${workspaceDir}`);
+  }
+}
+
 // Global state
 let embedder = null;
 let cache = null;
@@ -42,8 +70,8 @@ const features = [
 
 // Initialize application
 async function initialize() {
-  // Load configuration
-  config = await loadConfig();
+  // Load configuration with workspace support
+  config = await loadConfig(workspaceDir);
   
   // Ensure search directory exists
   try {

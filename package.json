@@ -5,7 +5,7 @@
   "type": "module",
   "main": "index.js",
   "bin": {
-    "smart-coding-mcp": "./index.js"
+    "smart-coding-mcp": "index.js"
   },
   "scripts": {
     "start": "node index.js",
