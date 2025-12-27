@@ -89,6 +89,13 @@ export function getToolDefinition(config) {
         }
       },
       required: ["query"]
+    },
+    annotations: {
+      title: "Semantic Code Search",
+      readOnlyHint: true,
+      destructiveHint: false,
+      idempotentHint: true,
+      openWorldHint: false
     }
   };
 }

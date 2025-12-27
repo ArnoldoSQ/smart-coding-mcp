@@ -21,6 +21,13 @@ export function getToolDefinition() {
     inputSchema: {
       type: "object",
       properties: {}
+    },
+    annotations: {
+      title: "Clear Embeddings Cache",
+      readOnlyHint: false,
+      destructiveHint: true,
+      idempotentHint: true,
+      openWorldHint: false
     }
   };
 }

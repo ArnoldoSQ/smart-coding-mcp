@@ -54,17 +54,17 @@ let indexer = null;
 let hybridSearch = null;
 let config = null;
 
-// Feature registry
+// Feature registry - ordered by priority (semantic_search first as primary tool)
 const features = [
-  {
-    module: IndexCodebaseFeature,
-    instance: null,
-    handler: IndexCodebaseFeature.handleToolCall
-  },
   {
     module: HybridSearchFeature,
     instance: null,
     handler: HybridSearchFeature.handleToolCall
+  },
+  {
+    module: IndexCodebaseFeature,
+    instance: null,
+    handler: IndexCodebaseFeature.handleToolCall
   },
   {
     module: ClearCacheFeature,
@@ -99,14 +99,19 @@ async function initialize() {
   hybridSearch = new HybridSearch(embedder, cache, config);
   const cacheClearer = new ClearCacheFeature.CacheClearer(embedder, cache, config);
 
-  // Store feature instances
-  features[0].instance = indexer;
-  features[1].instance = hybridSearch;
+  // Store feature instances (matches features array order)
+  features[0].instance = hybridSearch;
+  features[1].instance = indexer;
   features[2].instance = cacheClearer;
 
   // Start indexing in background (non-blocking)
   console.error("[Server] Starting background indexing...");
-  indexer.initialize().catch(err => {
+  indexer.indexAll().then(() => {
+    // Only start file watcher if explicitly enabled in config
+    if (config.watchFiles) {
+      indexer.setupFileWatcher();
+    }
+  }).catch(err => {
     console.error("[Server] Background indexing error:", err.message);
   });
 }

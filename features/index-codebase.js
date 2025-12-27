@@ -161,11 +161,6 @@ export class CodebaseIndexer {
 
     console.error("[Indexer] File watcher enabled for incremental indexing");
   }
-
-  async initialize() {
-    await this.indexAll();
-    this.setupFileWatcher();
-  }
 }
 
 // MCP Tool definition for this feature
@@ -182,6 +177,13 @@ export function getToolDefinition() {
           default: false
         }
       }
+    },
+    annotations: {
+      title: "Reindex Codebase",
+      readOnlyHint: false,
+      destructiveHint: false,
+      idempotentHint: true,
+      openWorldHint: false
     }
   };
 }
