@@ -82,9 +82,20 @@ Add to your MCP configuration file (e.g., `~/.config/claude/mcp.json` or similar
 }
 ```
 
-### Option 4: Configuration via Environment Variables
+## Environment Variables
 
-Override settings without a config.json file:
+Override configuration settings via environment variables in your MCP config:
+
+| Variable                      | Type    | Default   | Description                    |
+| ----------------------------- | ------- | --------- | ------------------------------ |
+| `SMART_CODING_VERBOSE`        | boolean | `false`   | Enable detailed logging        |
+| `SMART_CODING_BATCH_SIZE`     | number  | `100`     | Files to process in parallel   |
+| `SMART_CODING_MAX_FILE_SIZE`  | number  | `1048576` | Max file size in bytes (1MB)   |
+| `SMART_CODING_CHUNK_SIZE`     | number  | `15`      | Lines of code per chunk        |
+| `SMART_CODING_MAX_RESULTS`    | number  | `5`       | Max search results             |
+| `SMART_CODING_SMART_INDEXING` | boolean | `true`    | Enable smart project detection |
+
+**Example with environment variables:**
 
 ```json
 {
@@ -101,15 +112,6 @@ Override settings without a config.json file:
   }
 }
 ```
-
-**Supported environment variables:**
-
-- `SMART_CODING_VERBOSE` - Show detailed logs (true/false)
-- `SMART_CODING_BATCH_SIZE` - Files to process in parallel (default: 100)
-- `SMART_CODING_MAX_FILE_SIZE` - Max file size in bytes (default: 1048576)
-- `SMART_CODING_CHUNK_SIZE` - Lines per chunk (default: 15)
-- `SMART_CODING_MAX_RESULTS` - Max search results (default: 5)
-- `SMART_CODING_SMART_INDEXING` - Enable smart detection (true/false, default: true)
 
 **Note**: The server starts instantly and indexes in the background, so your IDE won't be blocked waiting for indexing to complete.
 
