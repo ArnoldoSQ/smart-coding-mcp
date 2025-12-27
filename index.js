@@ -4,6 +4,11 @@ import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js"
 import { CallToolRequestSchema, ListToolsRequestSchema } from "@modelcontextprotocol/sdk/types.js";
 import { pipeline } from "@xenova/transformers";
 import fs from "fs/promises";
+import { createRequire } from "module";
+
+// Import package.json for version
+const require = createRequire(import.meta.url);
+const packageJson = require("./package.json");
 
 import { loadConfig } from "./lib/config.js";
 import { EmbeddingsCache } from "./lib/cache.js";
@@ -110,7 +115,7 @@ async function initialize() {
 const server = new Server(
   { 
     name: "smart-coding-mcp", 
-    version: "1.0.0" 
+    version: packageJson.version 
   },
   { 
     capabilities: { 
