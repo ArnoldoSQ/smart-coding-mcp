@@ -228,85 +228,6 @@ Query: "error handling and exceptions"
 
 Finds all try/catch blocks and error handling patterns.
 
-## Performance
-
-Tested on a typical JavaScript project:
-
-| Metric         | Without Smart Indexing | With Smart Indexing |
-| -------------- | ---------------------- | ------------------- |
-| Files scanned  | 50,000+                | 500                 |
-| Indexing time  | 10+ min                | 2-3 min             |
-| Memory usage   | 2GB+                   | ~200MB              |
-| Search latency | N/A                    | <100ms              |
-
-## Supported File Types
-
-Languages: JavaScript, TypeScript, Python, Java, Kotlin, Scala, C, C++, C#, Go, Rust, Ruby, PHP, Swift, Shell
-
-Web: HTML, CSS, SCSS, Sass, XML, SVG
-
-Config/Data: JSON, YAML, TOML, SQL
-
-Total: 36 file extensions
-
-## Architecture
-
-```
-smart-coding-mcp/
-├── index.js                  # MCP server entry point
-├── lib/
-│   ├── config.js            # Configuration + smart detection
-│   ├── cache.js             # Embeddings persistence
-│   ├── utils.js             # Smart chunking
-│   ├── ignore-patterns.js   # Language-specific patterns
-│   └── project-detector.js  # Project type detection
-└── features/
-    ├── hybrid-search.js     # Semantic + exact match search
-    ├── index-codebase.js    # File indexing + watching
-    └── clear-cache.js       # Cache management
-```
-
-The modular design makes it easy to add new features. See ARCHITECTURE.md for implementation details.
-
-## Troubleshooting
-
-**"Server can't find config.json"**
-
-Make sure `cwd` is set in your MCP configuration to the full path of smart-coding-mcp.
-
-**"Indexing takes too long"**
-
-- Verify `smartIndexing` is enabled
-- Add more patterns to `excludePatterns`
-- Reduce `fileExtensions` to only what you need
-
-**"Search results aren't relevant"**
-
-- Try more specific queries
-- Increase `maxResults` to see more options
-- Run `index_codebase` to force a full reindex
-
-**"Cache corruption errors"**
-
-Use the `clear_cache` tool or run:
-
-```bash
-npm run clear-cache
-```
-
-## CLI Commands
-
-```bash
-# Start the server
-npm start
-
-# Development mode with auto-restart
-npm run dev
-
-# Clear embeddings cache
-npm run clear-cache
-```
-
 ## Privacy
 
 - AI model runs entirely on your machine
@@ -337,17 +258,6 @@ npm run clear-cache
 This project builds on research from Cursor showing that semantic search improves AI coding agent performance by 12.5% on average across question-answering tasks. The key insight is that AI assistants benefit more from relevant context than from large amounts of context.
 
 See: https://cursor.com/blog/semsearch
-
-## Contributing
-
-Contributions are welcome. See CONTRIBUTING.md for guidelines.
-
-Potential areas for improvement:
-
-- Additional language support
-- Code complexity analysis
-- Refactoring pattern detection
-- Documentation generation
 
 ## License
 
