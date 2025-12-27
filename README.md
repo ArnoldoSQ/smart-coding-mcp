@@ -44,7 +44,9 @@ Add to your MCP configuration file. The location depends on your IDE and OS:
 | -------------------- | ------- | ----------------------------------------------------------------- |
 | **Claude Desktop**   | macOS   | `~/Library/Application Support/Claude/claude_desktop_config.json` |
 | **Claude Desktop**   | Windows | `%APPDATA%\Claude\claude_desktop_config.json`                     |
-| **Cascade (Cursor)** | All     | configured via UI settings                                        |
+| **Cascade (Cursor)** | All     | Configured via UI Settings > Features > MCP                       |
+| **Antigravity**      | macOS   | `~/.gemini/antigravity/mcp_config.json`                           |
+| **Antigravity**      | Windows | `%USERPROFILE%\.gemini\antigravity\mcp_config.json`               |
 
 Add the server configuration to the `mcpServers` object in your config file:
 
