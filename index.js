@@ -97,7 +97,7 @@ async function initialize() {
   // Initialize features
   indexer = new CodebaseIndexer(embedder, cache, config, server);
   hybridSearch = new HybridSearch(embedder, cache, config);
-  const cacheClearer = new ClearCacheFeature.CacheClearer(embedder, cache, config);
+  const cacheClearer = new ClearCacheFeature.CacheClearer(embedder, cache, config, indexer);
 
   // Store feature instances (matches features array order)
   features[0].instance = hybridSearch;
