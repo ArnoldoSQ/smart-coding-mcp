@@ -1,5 +1,10 @@
 # Smart Coding MCP
 
+[![npm version](https://img.shields.io/npm/v/smart-coding-mcp.svg)](https://www.npmjs.com/package/smart-coding-mcp)
+[![npm downloads](https://img.shields.io/npm/dm/smart-coding-mcp.svg)](https://www.npmjs.com/package/smart-coding-mcp)
+[![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](https://opensource.org/licenses/MIT)
+[![Node.js](https://img.shields.io/badge/Node.js-%3E%3D18-green.svg)](https://nodejs.org/)
+
 An extensible Model Context Protocol (MCP) server that provides intelligent semantic code search for AI assistants. Built with local AI models, inspired by Cursor's semantic search research.
 
 ## What This Does
