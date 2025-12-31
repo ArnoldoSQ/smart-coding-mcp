@@ -2,7 +2,6 @@
 import { Server } from "@modelcontextprotocol/sdk/server/index.js";
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
 import { CallToolRequestSchema, ListToolsRequestSchema } from "@modelcontextprotocol/sdk/types.js";
-import { pipeline } from "@xenova/transformers";
 import fs from "fs/promises";
 import { createRequire } from "module";
 
@@ -12,6 +11,7 @@ const packageJson = require("./package.json");
 
 import { loadConfig } from "./lib/config.js";
 import { EmbeddingsCache } from "./lib/cache.js";
+import { createEmbedder } from "./lib/mrl-embedder.js";
 import { CodebaseIndexer } from "./features/index-codebase.js";
 import { HybridSearch } from "./features/hybrid-search.js";
 
@@ -19,6 +19,8 @@ import * as IndexCodebaseFeature from "./features/index-codebase.js";
 import * as HybridSearchFeature from "./features/hybrid-search.js";
 import * as ClearCacheFeature from "./features/clear-cache.js";
 import * as CheckLastVersionFeature from "./features/check-last-version.js";
+import * as SetWorkspaceFeature from "./features/set-workspace.js";
+import * as GetStatusFeature from "./features/get-status.js";
 
 // Parse workspace from command line arguments
 const args = process.argv.slice(2);
@@ -78,6 +80,16 @@ const features = [
     module: CheckLastVersionFeature,
     instance: null,
     handler: CheckLastVersionFeature.handleToolCall
+  },
+  {
+    module: SetWorkspaceFeature,
+    instance: null,
+    handler: SetWorkspaceFeature.handleToolCall
+  },
+  {
+    module: GetStatusFeature,
+    instance: null,
+    handler: GetStatusFeature.handleToolCall
   }
 ];
 
@@ -94,9 +106,10 @@ async function initialize() {
     process.exit(1);
   }
 
-  // Load AI model
+  // Load AI model using MRL embedder factory
   console.error("[Server] Loading AI embedding model (this may take time on first run)...");
-  embedder = await pipeline("feature-extraction", config.embeddingModel);
+  embedder = await createEmbedder(config);
+  console.error(`[Server] Model: ${embedder.modelName} (${embedder.dimension}d, device: ${embedder.device})`);
 
   // Initialize cache
   cache = new EmbeddingsCache(config);
@@ -113,6 +126,12 @@ async function initialize() {
   features[1].instance = indexer;
   features[2].instance = cacheClearer;
   features[3].instance = versionChecker;
+  
+  // Initialize new tools
+  const workspaceManager = new SetWorkspaceFeature.WorkspaceManager(config, cache, indexer);
+  const statusReporter = new GetStatusFeature.StatusReporter(config, cache, indexer, embedder);
+  features[4].instance = workspaceManager;
+  features[5].instance = statusReporter;
 
   // Start indexing in background (non-blocking)
   console.error("[Server] Starting background indexing...");

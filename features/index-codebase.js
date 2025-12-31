@@ -25,6 +25,13 @@ export class CodebaseIndexer {
    * Initialize worker thread pool for parallel embedding
    */
   async initializeWorkers() {
+    // Force single-threaded mode for nomic models (transformers.js v3 worker thread issue)
+    const isNomicModel = this.config.embeddingModel?.includes('nomic');
+    if (isNomicModel) {
+      console.error("[Indexer] Single-threaded mode (nomic model - workers disabled for stability)");
+      return;
+    }
+
     const numWorkers = this.config.workerThreads === "auto" 
       ? Math.max(1, os.cpus().length - 1) 
       : (this.config.workerThreads || 1);
@@ -48,6 +55,7 @@ export class CodebaseIndexer {
         const worker = new Worker(workerPath, {
           workerData: { 
             embeddingModel: this.config.embeddingModel,
+            embeddingDimension: this.config.embeddingDimension,
             verbose: this.config.verbose
           }
         });
