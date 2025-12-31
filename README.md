@@ -152,6 +152,15 @@ Use after major refactoring or branch switches
 Useful when cache becomes corrupted or outdated
 ```
 
+**d_check_last_version** - Get the latest version of any package
+
+```
+Query: "express" or "npm:react" or "pip:requests"
+Returns: Latest version from the official registry
+```
+
+Supports 20 ecosystems: npm, PyPI, Packagist, Crates.io, Maven, Go, RubyGems, NuGet, CocoaPods, Hex, CRAN, CPAN, pub.dev, Homebrew, Conda, Clojars, Hackage, Julia, Swift PM, Chocolatey.
+
 ## How It Works
 
 The server indexes your code in four steps:
