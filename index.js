@@ -191,21 +191,23 @@ async function initialize() {
     "[Server] Configuration loaded. Model will load on first use (lazy initialization)."
   );
 
-  // Optional: auto-index after delay
-  if (config.autoIndexDelay && config.autoIndexDelay > 0) {
+  // Progressive background indexing: starts after short delay, doesn't block
+  // Search works right away with partial results while indexing continues
+  if (config.autoIndexDelay !== false && config.autoIndexDelay > 0) {
     console.error(
-      `[Server] Auto-indexing will start after ${config.autoIndexDelay}ms delay...`
+      `[Server] Progressive indexing will start in ${config.autoIndexDelay}ms (search available immediately)...`
     );
     setTimeout(async () => {
-      console.error("[Server] Starting auto-indexing...");
       try {
         await ensureInitialized();
-        await indexer.indexAll();
+        // Use background indexing - non-blocking!
+        // Search can return partial results while indexing continues
+        indexer.startBackgroundIndexing();
         if (config.watchFiles) {
           indexer.setupFileWatcher();
         }
       } catch (err) {
-        console.error("[Server] Auto-indexing error:", err.message);
+        console.error("[Server] Background indexing error:", err.message);
       }
     }, config.autoIndexDelay);
   }

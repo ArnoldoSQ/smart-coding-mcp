@@ -35,16 +35,23 @@ export class CodebaseIndexer {
 
   /**
    * Initialize worker thread pool for parallel embedding
+   * Note: Workers are disabled for nomic models due to ONNX runtime thread-safety issues
    */
   async initializeWorkers() {
-    // Force single-threaded mode for nomic models (transformers.js v3 worker thread issue)
+    // Workers don't work with nomic/transformers.js due to ONNX WASM thread-safety issues
     const isNomicModel = this.config.embeddingModel?.includes('nomic');
     if (isNomicModel) {
-      console.error("[Indexer] Single-threaded mode (nomic model - workers disabled for stability)");
+      console.error("[Indexer] Single-threaded mode (nomic model - ONNX workers incompatible)");
       return;
     }
 
-    const numWorkers = this.config.workerThreads === "auto" 
+    // Check if workers are explicitly disabled
+    if (this.config.workerThreads === 0 || this.config.disableWorkers) {
+      console.error("[Indexer] Single-threaded mode (workers disabled by config)");
+      return;
+    }
+
+    const numWorkers = this.config.workerThreads === "auto"
       ? this.throttle.maxWorkers  // Use throttled worker count
       : this.throttle.getWorkerCount(this.config.workerThreads);
 
@@ -266,30 +273,44 @@ export class CodebaseIndexer {
     if (this.config.verbose) {
       console.error(`[Indexer] Processing: ${fileName}...`);
     }
-    
+
     try {
       // Check file size first
       const stats = await fs.stat(file);
-      
+
       // Skip directories
       if (stats.isDirectory()) {
         return 0;
       }
-      
+
       if (stats.size > this.config.maxFileSize) {
         if (this.config.verbose) {
           console.error(`[Indexer] Skipped ${fileName} (too large: ${(stats.size / 1024 / 1024).toFixed(2)}MB)`);
         }
         return 0;
       }
-      
+
+      // OPTIMIZATION: Check mtime first (fast) before reading file content
+      const currentMtime = stats.mtimeMs;
+      const cachedMtime = this.cache.getFileMtime(file);
+
+      // If mtime unchanged, file definitely unchanged - skip without reading
+      if (cachedMtime && currentMtime === cachedMtime) {
+        if (this.config.verbose) {
+          console.error(`[Indexer] Skipped ${fileName} (unchanged - mtime)`);
+        }
+        return 0;
+      }
+
       const content = await fs.readFile(file, "utf-8");
       const hash = hashContent(content);
-      
-      // Skip if file hasn't changed
+
+      // Skip if file hasn't changed (content check after mtime indicated change)
       if (this.cache.getFileHash(file) === hash) {
+        // Content same but mtime different - update cached mtime
+        this.cache.setFileHash(file, hash, currentMtime);
         if (this.config.verbose) {
-          console.error(`[Indexer] Skipped ${fileName} (unchanged)`);
+          console.error(`[Indexer] Skipped ${fileName} (unchanged - hash)`);
         }
         return 0;
       }
@@ -321,7 +342,7 @@ export class CodebaseIndexer {
         }
       }
 
-      this.cache.setFileHash(file, hash);
+      this.cache.setFileHash(file, hash, currentMtime);
       if (this.config.verbose) {
         console.error(`[Indexer] Completed ${fileName} (${addedChunks} chunks)`);
       }
@@ -375,6 +396,65 @@ export class CodebaseIndexer {
     
     console.error(`[Indexer] File discovery: ${files.length} files in ${Date.now() - startTime}ms`);
     return files;
+  }
+
+  /**
+   * Sort files by priority for progressive indexing
+   * Priority: recently modified files first (users likely searching for recent work)
+   */
+  async sortFilesByPriority(files) {
+    const startTime = Date.now();
+
+    // Get mtime for all files in parallel
+    const filesWithMtime = await Promise.all(
+      files.map(async (file) => {
+        try {
+          const stats = await fs.stat(file);
+          return { file, mtime: stats.mtimeMs };
+        } catch {
+          return { file, mtime: 0 };
+        }
+      })
+    );
+
+    // Sort by mtime descending (most recently modified first)
+    filesWithMtime.sort((a, b) => b.mtime - a.mtime);
+
+    if (this.config.verbose) {
+      console.error(`[Indexer] Priority sort: ${files.length} files in ${Date.now() - startTime}ms`);
+    }
+
+    return filesWithMtime.map(f => f.file);
+  }
+
+  /**
+   * Start background indexing (non-blocking)
+   * Allows search to work immediately with partial results
+   */
+  startBackgroundIndexing(force = false) {
+    if (this.isIndexing) {
+      console.error("[Indexer] Background indexing already in progress");
+      return;
+    }
+
+    console.error("[Indexer] Starting background indexing...");
+
+    // Run indexAll in background (don't await)
+    this.indexAll(force).then(result => {
+      console.error(`[Indexer] Background indexing complete: ${result.message || 'done'}`);
+    }).catch(err => {
+      console.error(`[Indexer] Background indexing error: ${err.message}`);
+    });
+  }
+
+  /**
+   * Get current indexing status for progressive search
+   */
+  getIndexingStatus() {
+    return {
+      ...this.indexingStatus,
+      isReady: !this.indexingStatus.inProgress || this.indexingStatus.processedFiles > 0
+    };
   }
 
   /**
@@ -461,16 +541,21 @@ export class CodebaseIndexer {
     console.error(`[Indexer] Starting optimized indexing in ${this.config.searchDirectory}...`);
     
     // Step 1: Fast file discovery with fdir
-    const files = await this.discoverFiles();
-    
+    let files = await this.discoverFiles();
+
     if (files.length === 0) {
       console.error("[Indexer] No files found to index");
       this.sendProgress(100, 100, "No files found to index");
       return { skipped: false, filesProcessed: 0, chunksCreated: 0, message: "No files found to index" };
     }
 
+    // Step 1.1: Sort files by priority (recently modified first) for progressive indexing
+    // This ensures search results are useful even while indexing is in progress
+    files = await this.sortFilesByPriority(files);
+    console.error(`[Indexer] Progressive mode: recently modified files will be indexed first`);
+
     // Send progress: discovery complete
-    this.sendProgress(5, 100, `Discovered ${files.length} files`);
+    this.sendProgress(5, 100, `Discovered ${files.length} files (sorted by priority)`);
 
     // Step 1.5: Prune deleted or excluded files from cache
     if (!force) {
@@ -494,13 +579,15 @@ export class CodebaseIndexer {
       }
     }
 
-    // Step 2: Process files in adaptive batches with lazy filtering
-    // Instead of pre-filtering all files (expensive), check hashes during processing
-    const adaptiveBatchSize = files.length > 10000 ? 500 :
-                              files.length > 1000 ? 200 : 
+    // Step 2: Process files with progressive indexing
+    // Use batch size of 1 for immediate search availability (progressive indexing)
+    // Each file is processed, embedded, and saved immediately so search can find it
+    const adaptiveBatchSize = this.config.progressiveIndexing !== false ? 1 :
+                              files.length > 10000 ? 500 :
+                              files.length > 1000 ? 200 :
                               this.config.batchSize || 100;
 
-    console.error(`[Indexer] Processing ${files.length} files with lazy filtering (batch size: ${adaptiveBatchSize})`);
+    console.error(`[Indexer] Processing ${files.length} files (progressive mode: batch size ${adaptiveBatchSize})`);
 
     // Step 3: Initialize worker threads (always use when multi-core available)
     const useWorkers = os.cpus().length > 1;
@@ -529,20 +616,32 @@ export class CodebaseIndexer {
       for (const file of batch) {
         try {
           const stats = await fs.stat(file);
-          
+
           // Skip directories and oversized files
           if (stats.isDirectory()) continue;
           if (stats.size > this.config.maxFileSize) {
             skippedFiles++;
             continue;
           }
-          
-          // Read content and check hash
+
+          // OPTIMIZATION: Check mtime first (fast) before reading file content
+          const currentMtime = stats.mtimeMs;
+          const cachedMtime = this.cache.getFileMtime(file);
+
+          // If mtime unchanged, file definitely unchanged - skip without reading
+          if (cachedMtime && currentMtime === cachedMtime) {
+            skippedFiles++;
+            continue;
+          }
+
+          // mtime changed (or new file) - read content and verify with hash
           const content = await fs.readFile(file, "utf-8");
           const hash = hashContent(content);
-          
-          // Skip unchanged files inline (lazy check)
+
+          // Check if content actually changed (mtime can change without content change)
           if (this.cache.getFileHash(file) === hash) {
+            // Content same but mtime different - update cached mtime
+            this.cache.setFileHash(file, hash, currentMtime);
             skippedFiles++;
             continue;
           }
@@ -557,11 +656,12 @@ export class CodebaseIndexer {
               text: chunk.text,
               startLine: chunk.startLine,
               endLine: chunk.endLine,
-              hash
+              hash,
+              mtime: currentMtime
             });
           }
-          
-          fileHashes.set(file, hash);
+
+          fileHashes.set(file, { hash, mtime: currentMtime });
         } catch (error) {
           // Skip files with read errors
           skippedFiles++;
@@ -612,9 +712,9 @@ export class CodebaseIndexer {
         }
       }
 
-      // Update file hashes
-      for (const [file, hash] of fileHashes) {
-        this.cache.setFileHash(file, hash);
+      // Update file hashes with mtime
+      for (const [file, { hash, mtime }] of fileHashes) {
+        this.cache.setFileHash(file, hash, mtime);
       }
 
       processedFiles += filesProcessedInBatch.size;
@@ -626,25 +726,30 @@ export class CodebaseIndexer {
       this.indexingStatus.totalFiles = Math.max(estimatedTotal, processedFiles);
       this.indexingStatus.percentage = estimatedTotal > 0 ? Math.floor((processedFiles / estimatedTotal) * 100) : 100;
 
-      // Incremental save to SQLite (every N batches)
-      const saveInterval = this.config.incrementalSaveInterval || 5;
-      if (batchCounter % saveInterval === 0) {
+      // Progressive indexing: save after EVERY batch so search can find new results immediately
+      // This is critical for background indexing - users can search while indexing continues
+      if (chunksToInsert.length > 0) {
         if (typeof this.cache.saveIncremental === 'function') {
           await this.cache.saveIncremental();
+        } else {
+          // Fallback: full save (slower but ensures data is persisted)
+          await this.cache.save();
         }
       }
-      
+
       // Apply CPU throttling (delay between batches)
       await this.throttle.throttledBatch(null);
 
-      // Progress indicator every batch
-      if (processedFiles > 0 && (processedFiles % (adaptiveBatchSize * 2) === 0 || i + adaptiveBatchSize >= files.length)) {
+      // Progress indicator - show progress after each file in progressive mode
+      const progressInterval = adaptiveBatchSize === 1 ? 1 : adaptiveBatchSize * 2;
+      if (processedFiles > 0 && ((processedFiles + skippedFiles) % progressInterval === 0 || i + adaptiveBatchSize >= files.length)) {
         const elapsed = ((Date.now() - totalStartTime) / 1000).toFixed(1);
-        const rate = (processedFiles / parseFloat(elapsed)).toFixed(0);
-        console.error(`[Indexer] Progress: ${processedFiles} changed, ${skippedFiles} skipped (${rate} files/sec)`);
-        
+        const totalProcessed = processedFiles + skippedFiles;
+        const rate = totalProcessed > 0 ? (totalProcessed / parseFloat(elapsed)).toFixed(1) : '0';
+        console.error(`[Indexer] Progress: ${processedFiles} indexed, ${skippedFiles} skipped of ${files.length} (${rate} files/sec)`);
+
         // Send MCP progress notification (10-95% range for batch processing)
-        const progressPercent = Math.min(95, Math.floor(10 + (i / files.length) * 85));
+        const progressPercent = Math.min(95, Math.floor(10 + (totalProcessed / files.length) * 85));
         this.sendProgress(progressPercent, 100, `Indexed ${processedFiles} files, ${skippedFiles} skipped (${rate}/sec)`);
       }
     }
